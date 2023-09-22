@@ -1,0 +1,5 @@
+name = Backdrop Live hooks demo
+description = BD Live October 2023 demo by argiepiano
+backdrop = 1.x
+package = Other
+type = module

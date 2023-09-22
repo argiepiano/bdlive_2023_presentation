@@ -1,0 +1,449 @@
+<?php
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ * 
+ * In this hook, we pre-select the location of the restaurant, based on the
+ * reviewer's location found in their user profile.
+ * 
+ * We remove the "Sushi" option from restaurant types for users with a
+ * role of Junior Reviewer.
+ * 
+ * We add a custom validation callback, to disallow low scores
+ * connected to specific restaurant types and reviewer's roles.
+ * 
+ * We will hide the field field_approved for all roles except those with special
+ * permission (see implementation of hook_permission below).
+ *  
+ * In order to find FORM_ID we could make this a hook_form_alter()
+ * implementation first, and look at the third parameter ($form_id), then change
+ * this to hook_form_FORM_ID_alter(). As in:
+ * @code
+ *   function bdlive_demo_form_alter(&$form, &$form_state, &$form_id) {
+ *     debug($form_id);
+ *   }
+ * @endcode
+ * 
+ * ALWAYS clear the caches when you change the function name or add a new hook
+ * implementation.
+ * 
+ */
+function bdlive_demo_form_restaurant_reviews_node_form_alter(&$form, &$form_state, &$form_id) {
+  // Notice that the first paramenter, &$form, starts with "&". This is really
+  // important, as it allows us to modify the original form array. 
+  
+  // Get the current user account.
+  global $user;
+  // We need to load the full user entity, since the global $user doesn't contain
+  // any of the fields.
+  $current_user = user_load($user->uid);
+
+  // In order to pre-select the location of the restaurant to match that of the
+  // reviewer, we need to load the value of field_location attached to the user.
+  $location_value = field_get_value($current_user, 'field_location');
+
+  // Now pre-select that value in the node form by settings #default_value.
+  // In order to find out exactly WHERE to put this default value, we may need
+  // to inspect the $form array and all subarrays for 'field_location'. This
+  // depends on the field type.
+  $form['field_location'][LANGUAGE_NONE]['#default_value'][] = $location_value;
+  
+  // Remove the "Sushi" option from the list of restaurant types if the
+  // reviewer has the roler "Junior reviewer". Sushi is a taxonomy term, so we
+  // need to load that from the name to find out the tid.
+  $term_array = taxonomy_term_load_multiple_by_name('Sushi', 'restaurant_type');
+  $first_term_in_array = reset($term_array);
+  if (user_has_role('junior_reviewer')) {
+    unset($form['field_restaurant_type'][LANGUAGE_NONE]['#options'][$first_term_in_array->tid]);
+  }
+
+  // Add a custom validation function to disallow certain selections.
+  $form['#validate'][] = 'bdlive_demo_custom_validation';
+  
+  // Hide field_approved to everyone except Editor.
+  // Comment out this line to test the widget-level hiding of fields.
+  $form['field_approved'][LANGUAGE_NONE]['#access'] = user_access('approve reviews');
+}
+
+/**
+ * Custom validation to disallow certain selections.
+ * 
+ * We will prevent junior reviewers to give a low rating to American restaurants.
+ */
+function bdlive_demo_custom_validation($form, &$form_state) {
+  $values = $form_state['values'];
+
+  // Get the tid for American restaurants.
+  $term_array = taxonomy_term_load_multiple_by_name('American', 'restaurant_type');
+  $first_term_in_array = reset($term_array);
+
+  if (user_has_role('junior_reviewer') 
+    && $values['field_restaurant_type'][LANGUAGE_NONE][0]['tid'] == $first_term_in_array->tid 
+    && $values['field_score'][LANGUAGE_NONE][0]['value'] == 'Not for me') {
+      form_set_error('field_score][und', t('What??? As a Junior Reviewer you are not allowed to give bad reviews to American restaurants!'));
+  }
+}
+
+/**
+ * Implements hook_permission().
+ * 
+ * Create a special permission for approving reviews.
+ */
+function bdlive_demo_permission() {
+  return array(
+    'approve reviews' => array(
+      'title' => t('Approve reviews'),
+      'description' => t('Approve submitted reviews.'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_node_view_alter().
+ * 
+ * For illustration, we will add a view at the bottom of the node. This could be
+ * easily done with Backdrop's layouts and blocks, or with contrib Viewsfield.
+ * 
+ * We'll also add two custom lines: total number of reviews (both approved and 
+ * unapproved), and total numbers of approved reviews. These are stored in the
+ * user account as two integer fields. 
+ * 
+ * hook_node_view_alter() is invoked before any preprocess or theming, and
+ * therefore the build array is subject to change! Another way is (of course)
+ * to add the view within the preprocess function, or even in the template file.
+ * 
+ * The $build variable is a "renderable array" - an array of elements that will
+ * be eventually turned into markup by functions like render(), usually in the
+ * template file.
+ * 
+ * Typically, the render array contains a key '#type' or '#theme' that tells
+ * the Backdrop which theming functions to use. 
+ * 
+ * To use elements, use '#type'. Elements are defined by hook_element_info()
+ * (see for example system_element_info()). Typical ones: 'markup', 'help',
+ * 'link', 'fieldset', 'details' and 'dropbutton'. All of them require additional
+ * keys to be defined.
+ * 
+ * To use theming functions, use `#theme`. Those are defined by hook_theme(). 
+ * See for example, system_theme(). Typical ones are `item_list' or 'table'.
+ * 
+ * WARNING: be careful about attaching other node views that may be calling this hook
+ * (e.g. adding a view that shows teasers). You'll end up with an infinite loop!
+ */
+function bdlive_demo_node_view_alter(&$build) {
+  // Only add the view for full view mode for this type of nodes..
+  if ($build['#view_mode'] == 'full' && $build['#node']->type == 'restaurant_reviews') {
+    $node = $build['#node'];
+    $author = user_load($node->uid);
+    $build['view_title'] = array(
+      '#type' => 'markup',
+      '#markup' => '<h3>Reviews by ' . field_get_value($author, 'field_full_name') . '</h3>',
+      '#weight' => 199,
+    );
+
+    // We also add the number of approved reviews.
+    $build['approved_number'] = array(
+      '#type' => 'help',
+      '#markup' => 'Number of approved reviews: ' . field_get_value($author, 'field_number_of_approved_reviews'),
+      '#weight' => 200,
+    );
+    // We also add the total number of reviews.
+    $build['total_number'] = array(
+      '#type' => 'help',
+      '#markup' => 'Total number of reviews: ' . field_get_value($author, 'field_number_of_reviews'),
+      '#weight' => 201,
+    );
+    $build['review_view'] = array(
+      '#type' => 'help',
+      '#markup' => views_embed_view('reviews', 'default', $node->uid),
+      '#weight' => 202,
+    );
+  }
+}
+
+/**
+ * Implements hook_node_insert().
+ * 
+ * We'll keep track of the number of reviews and approved reviews by using two
+ * user fields as counters. This is really not the best way to do this (querying
+ * the database is much more reliable). So, only for illustration purposes.
+ * 
+ * Node insert is invoked right after a NEW node has been inserted in the database. 
+ */
+function bdlive_demo_node_insert($node) {
+  if ($node->type == 'restaurant_reviews') {
+    $author = user_load($node->uid);
+    $current_review_counter = field_get_value($author, 'field_number_of_reviews');
+    $current_review_counter++;
+    $author->field_number_of_reviews[LANGUAGE_NONE][0]['value'] = $current_review_counter;
+
+    // This user may have the power to "self-approve" new reviews!
+    if (!empty($node->field_approved[LANGUAGE_NONE][0]['value'])) {
+      $current_approved_review_counter = field_get_value($node, 'field_number_of_approved_reviews');
+      $current_approved_review_counter++;
+      $author->field_number_of_approved_reviews[LANGUAGE_NONE][0]['value'] = $current_approved_review_counter;
+    }
+    $author->save();
+  }
+}
+
+/**
+ * Implements hook_node_update().
+ * 
+ * We will increment the approved reviews when an editor edits a review and 
+ * approves it.
+ * 
+ * This hook is invoked when an existing node is saved.
+ */
+function bdlive_demo_node_update($node) {
+  if ($node->type == 'restaurant_reviews') {
+    // In order to determine if the approved field was edited, we must load the
+    // original node.
+    $original_node = $node->original;
+    $original_value = (int) field_get_value($original_node, 'field_approved');
+    $new_value = (int) field_get_value($node, 'field_approved');
+    if ($original_value != $new_value) {
+      $user = user_load($node->uid);
+      $number_of_approved = field_get_value($user, 'field_number_of_approved_reviews');
+      // If approval was changed from "no" or "empty" to "yes", increment.
+      if (empty($original_value)) {
+        $number_of_approved++;
+      }
+      else {
+        // The approval was "yes" and now is "no".
+        $number_of_approved--;
+      }
+      $user->field_number_of_approved_reviews[LANGUAGE_NONE][0]['value'] = $number_of_approved;
+      $user->save();
+    }
+  }
+}
+
+/**
+ * Implements hook_node_delete().
+ * 
+ * We will decrease the approved reviews when a review node is deleted. 
+ * 
+ * This hook is invoked when an existing node is deleted.
+ */
+function bdlive_demo_node_delete($node) {
+  if ($node->type == 'restaurant_reviews') {
+    // In order to determine if the approved field was edited, we must load the
+    // original node.
+    $original_node = $node->original;
+    $original_approved_value = (int) field_get_value($original_node, 'field_approved');
+    $new_approved_value = (int) field_get_value($node, 'field_approved');
+    if ($original_approved_value != $new_approved_value) {
+      $user = user_load($node->uid);
+      $number_of_approved = field_get_value($user, 'field_number_of_approved_reviews');
+      // If approval was changed from "no" or "empty" to "yes", increment.
+      if (empty($original_approved_value)) {
+        $number_of_approved++;
+      }
+      else {
+        // The approval was "yes" and now is "no".
+        $number_of_approved--;
+      }
+      $user->field_number_of_approved_reviews[LANGUAGE_NONE][0]['value'] = $number_of_approved;
+      $user->save();
+    }
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ * 
+ * We use this to hide the "Relations" fieldset, which can be confusing and is
+ * not needed for Restaurant type vocabulary 
+ */
+function bdlive_demo_form_taxonomy_form_term_alter(&$form, &$form_state) {
+  if ($form['#term']['vocabulary'] == 'restaurant_type' && !user_has_role('administrator')) {
+    $form['relations']['#access'] = FALSE;
+  }
+}
+
+/**
+ * Implements hook_preprocess_node().
+ * 
+ * We will create a new template suggestion:
+ *   node--VIEW_MODE
+ * 
+ * This will allow the site architect to place template files in the current
+ * theme's 'template' folder to override the node template for specific view
+ * modes. 
+ */
+function bdlive_demo_preprocess_node(&$variables) {
+  // The & before the parameter $variables is REALLY important as it allows us 
+  // to modify its values.
+
+  // Notice that the definition needs to include underscores.
+  // This will allow us to create node--teaser.tpl.php or any other view mode.
+  $variables['theme_hook_suggestions'][] = 'node__' . $variables['elements']['#view_mode'];
+
+}
+
+/**
+ * Implements hook_menu().
+ * 
+ * hook_menu creates entries in the menu_router table and is used extensively in
+ * Backdrop. 
+ * 
+ * The example below allows us to create a new path to show nodes using a specific
+ * view mode. This is currently only possible with Views (rendered entity) or 
+ * Layout
+ * 
+ * Important: hook_menu() and hook_menu_alter() are only run when you clear caches.
+ * This means that you can't dynamically modify menu items on regular page requests
+ * simply by using hook_menu_alter(). There are other methods to do this.
+ */
+function bdlive_demo_menu() {
+  // The fragments that start with % invoke functions that end in _load(), meaning
+  // that the returned value is available to pass as arguments to the page
+  // callback. For example, %node auto-loads a node with the specified nid using
+  // node_load(). Fragments with % alone are passed literally as a string.
+  $items['node/%node/view-mode/%'] = array(
+    'title callback' => 'node_page_title', // This assures the node title is used as page title.
+    'title arguments' => array(1), // Send the value returned by placeholder in position 1 (the loaded node object).
+    'page callback' => 'bdlive_demo_view_node_view_mode',
+    'page arguments' => array(1, 3), // Send the node and the view mode string.
+    'access callback' => 'node_access',
+    'access arguments' => array('view', 1),
+    'type' => MENU_CALLBACK,
+  );
+  return $items;
+}
+
+/**
+ * Callback to produce the view of the node using a specified view mode.
+ */
+function bdlive_demo_view_node_view_mode($node, $view_mode) {
+  $view = entity_get_controller('node')->view(array($node), $view_mode);
+  return $view;
+}
+
+/**
+ * Implements hook_block_view_alter().
+ * 
+ * We could use this to somehow modify elements of the block like title, remove
+ * stuff, or add stuff. In this example we want to add text to the content, and
+ * remove the contextual links for the "Powered by Backdrop" block... just a silly example. 
+ *
+ */
+function bdlive_demo_block_view_alter(&$data, $block) {
+  if ($block->delta == 'powered-by') {
+    unset($data['content']['#contextual_links']);
+    $data['content']['#markup'] .= '. The BEST CMS in the world!';
+    backdrop_add_library('system', 'backdrop.ajax');
+
+  }
+}
+
+/**
+ * Implements hook_views_pre_render().
+ * 
+ * We add the backdrop.ajax library so that we can open linked nodes in a dialog.
+ * This also requires some modifications to the views field (rewrite field): 
+ * - adding class "use-ajax"
+ * - adding attribute: data-dialog="true"
+ */
+function bdlive_demo_views_pre_render(&$view) {
+  if ($view->name == 'reviews') {
+    backdrop_add_library('system', 'backdrop.ajax');
+  }
+}
+
+
+/**
+ * Implements hook_action_info().
+ * 
+ * Creates an action to mark reviews as approved.
+ */
+function bdlive_demo_action_info() {
+  $action['bdlive_approve_review'] = array(
+    'type' => 'node',
+    'label' => t('Approve restaurant reviews'),
+    'callback' => 'bdlive_demo_action_change_approval_status_review',
+  );
+  $action['bdlive_unapprove_review'] = array(
+    'type' => 'node',
+    'label' => t('Remove approval for restaurant reviews'),
+    'callback' => 'bdlive_demo_action_change_approval_status_review',
+  );
+  return $action;
+}
+
+/**
+ * Callback for action to approve review.
+ * 
+ * These action callbacks are called repeatedly, once for each of the views rows selected.
+ * They receive specific parameters. The first parameter is the
+ * entity itself, in our case, the node object itself, since this action is of type => node.
+ * 
+ * The second parameter is  the context, which includes the machine name of the action
+ * and the action info. $context will help us determine which of the two actions
+ * triggered this callback.
+ */
+function bdlive_demo_action_change_approval_status_review($node, $context) {
+  if ($context['action_name'] == 'bdlive_approve_review') {
+    $node->field_approved[LANGUAGE_NONE][0]['value'] = 1;
+  }
+  else {
+    $node->field_approved[LANGUAGE_NONE][0]['value'] = 0;
+  }
+  $node->save();
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ * 
+ * We use this to add a specific setting to the field instance definition through
+ * the field settings UI. These new setting allows us to indicate whether the
+ * field should be hidden for users without 'approve reviews' permission. 
+ * 
+ * This hook is commented out because the field hiding is done in a different,
+ * less granular way in the function bdlive_demo_form_restaurant_reviews_node_form_alter
+ * above.
+ * 
+ * When uncommented, this setting will be saved in the field instance definition
+ * and will be picked up by bdlive_demo_field_widget_form_alter() to hide the 
+ * field in the node add/edit form.
+ * 
+ * There is no need for a form submit handler. Backdrop will save anything within
+ * the 'settings' subarray to the instance definition.
+ */
+function bdlive_demo_form_field_ui_field_edit_form_alter(&$form, &$form_state) {
+  // $instance = $form['#instance'];
+  // // If the current field instance is not locked and is attached to a node of type 
+  // // restaurant_reviews, show this setting element in the UI.
+  // if (empty($form['locked']) && $instance['entity_type'] == 'node' && $instance['bundle'] == 'restaurant_reviews') {    
+  //   // Important: the custom settings MUST be stored as an array within the subarray 
+  //   // 'settings' of the field instance definition.
+  //   $form['instance']['settings']['restaurant_settings'] = array(
+  //     '#type' => 'fieldset',
+  //     '#title' => t('Restaurant Review Settings'),
+  //     '#weight' => 5,
+  //     '#collapsible' => FALSE,
+  //   );
+  //   $form['instance']['settings']['restaurant_settings']['hide_in_form'] = array(
+  //     '#type' => 'checkbox',
+  //     '#title' => t('Hide this field'),
+  //     '#description' => t('Hide this field in the node add/edit form for users without the "Approve reviews" permission.'),
+  //     '#default_value' => !empty($instance['settings']['restaurant_settings']['hide_in_form']) ? $instance['settings']['restaurant_settings']['hide_in_form'] : FALSE,
+  //   );
+  // }
+}
+
+/**
+ * Implements hook_field_widget_form_alter().
+ * 
+ * This is commented out because the field hiding is being handled by bdlive_demo_form_restaurant_reviews_node_form_alter().
+ * Comment the hiding in that function, and uncomment this one here and bdlive_demo_form_field_ui_field_edit_form_alter
+ * to test this functionality.
+ */
+function bdlive_demo_field_widget_form_alter(&$element, &$form_state, $context) {
+  // if ($element['#entity_type'] == 'node' && $element['#bundle'] == 'restaurant_reviews') {
+  //   if (isset($context['instance']['settings']['restaurant_settings']) && $context['instance']['settings']['restaurant_settings']['hide_in_form'] && !user_access('approve reviews')) {
+  //     $element['#access'] = FALSE;
+  //   }
+  // }
+}

@@ -1,0 +1,7 @@
+<?php
+
+/**
+ * Implements hook_install().
+ * 
+ * Adds some fields to nodes.
+ */
