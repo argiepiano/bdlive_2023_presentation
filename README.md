@@ -1,5 +1,5 @@
 # Using hooks to extend Backdrop CMS
-## Presentation for Backdrop Live - October 2023
+## Presentation for Backdrop Live - September 2023
 
 This repo contains the slides and a demo module to illustrates the use of hooks in Backdrop CMS.
 
