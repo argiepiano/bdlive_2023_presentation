@@ -1,0 +1,16 @@
+{
+    "_config_name": "user.role.reviewer",
+    "name": "reviewer",
+    "label": "Reviewer",
+    "description": "",
+    "weight": 4,
+    "permissions": [
+        "access administration bar",
+        "administer nodes",
+        "create restaurant_reviews content",
+        "edit own restaurant_reviews content",
+        "edit any restaurant_reviews content",
+        "delete own restaurant_reviews content",
+        "access administration pages"
+    ]
+}

@@ -2,6 +2,114 @@
 
 /**
  * Implements hook_install().
- * 
- * Adds some fields to nodes.
  */
+function bdlive_demo_install() {
+  // Add "approve reviews" permission to editor
+  user_role_grant_permissions('editor', array(
+    'approve reviews',
+  ));
+
+  // Add some terms to the retaurant_type vocabulary.
+  foreach (array('American', 'Asian', 'Fast food', 'French', 'Italian', 'Latin American', 'Sushi') as $name) {
+    $term = entity_create('taxonomy_term', array('vocabulary' => 'restaurant_type'));
+    $term->name = $name;
+    $term->save();
+  }
+
+  // Add a couple of users.
+  $users = array(
+    'child' => array(
+      'name' => 'child',
+      'pass' => 'bdlive_demo_2023',
+      'mail' => 'child@example.com',
+      'roles' => array(
+        'authenticated',
+        'reviewer',
+      ),
+      'field_email' => array(
+        'und' => array(
+          0 => array(
+            'email' => 'child@example.com'
+          ),
+        ),
+      ),
+      'field_full_name' => array(
+        'und' => array(
+          0 => array(
+            'value' => 'Julia Child'
+          ),
+        ),
+      ),
+      'field_location' => array(
+        'und' => array(
+          0 => array(
+            'value' => 'South'
+          ),
+        ),
+      ),
+      'field_number_of_approved_reviews' => array(
+        'und' => array(
+          0 => array(
+            'value' => 0,
+          ),
+        ),
+      ),
+      'field_number_of_reviews' => array(
+        'und' => array(
+          0 => array(
+            'value' => 0,
+          ),
+        ),
+      ),
+    ),
+
+    'hollywood' => array(
+      'name' => 'hollywood',
+      'pass' => 'bdlive_demo_2023',
+      'mail' => 'hollywood@example.com',
+      'roles' => array(
+        'authenticated',
+        'junior_reviewer',
+      ),
+      'field_email' => array(
+        'und' => array(
+          0 => array(
+            'email' => 'hollywood@example.com'
+          ),
+        ),
+      ),
+      'field_full_name' => array(
+        'und' => array(
+          0 => array(
+            'value' => 'Paul Hollywood'
+          ),
+        ),
+      ),
+      'field_location' => array(
+        'und' => array(
+          0 => array(
+            'value' => 'East coast'
+          ),
+        ),
+      ),
+      'field_number_of_approved_reviews' => array(
+        'und' => array(
+          0 => array(
+            'value' => 0,
+          ),
+        ),
+      ),
+      'field_number_of_reviews' => array(
+        'und' => array(
+          0 => array(
+            'value' => 0,
+          ),
+        ),
+      ),
+    ),
+  );
+  foreach ($users as $user_info) {
+    $user = entity_create('user', $user_info);
+    $user->save();
+  }
+}

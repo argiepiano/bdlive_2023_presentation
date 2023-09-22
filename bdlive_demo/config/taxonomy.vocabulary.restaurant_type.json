@@ -1,0 +1,9 @@
+{
+    "_config_name": "taxonomy.vocabulary.restaurant_type",
+    "name": "Restaurant type",
+    "machine_name": "restaurant_type",
+    "description": "",
+    "hierarchy": "0",
+    "language": 0,
+    "weight": 0
+}

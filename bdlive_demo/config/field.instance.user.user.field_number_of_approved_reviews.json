@@ -1,0 +1,40 @@
+{
+    "_config_name": "field.instance.user.user.field_number_of_approved_reviews",
+    "field_name": "field_number_of_approved_reviews",
+    "entity_type": "user",
+    "bundle": "user",
+    "label": "Number of approved reviews",
+    "widget": {
+        "weight": "11",
+        "type": "number",
+        "module": "number",
+        "active": 0,
+        "settings": []
+    },
+    "description": "",
+    "required": 0,
+    "deleted": 0,
+    "default_value": null,
+    "default_value_function": null,
+    "settings": {
+        "min": "",
+        "max": "",
+        "prefix": "",
+        "suffix": "",
+        "user_register_form": 0
+    },
+    "display": {
+        "default": {
+            "label": "hidden",
+            "type": "number_decimal",
+            "settings": {
+                "thousand_separator": "",
+                "decimal_separator": ".",
+                "scale": 2,
+                "prefix_suffix": true
+            },
+            "module": "number",
+            "weight": 4
+        }
+    }
+}

@@ -1,0 +1,22 @@
+{
+    "_config_name": "field.field.field_number_of_reviews",
+    "field_name": "field_number_of_reviews",
+    "type": "number_decimal",
+    "translatable": false,
+    "module": "number",
+    "active": 1,
+    "locked": 0,
+    "cardinality": "1",
+    "deleted": 0,
+    "entity_types": [],
+    "settings": {
+        "precision": "10",
+        "scale": "0"
+    },
+    "storage": {
+        "type": "field_sql_storage",
+        "settings": [],
+        "module": "field_sql_storage",
+        "active": 1
+    }
+}

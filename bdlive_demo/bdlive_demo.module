@@ -200,17 +200,18 @@ function bdlive_demo_node_update($node) {
     // In order to determine if the approved field was edited, we must load the
     // original node.
     $original_node = $node->original;
-    $original_value = (int) field_get_value($original_node, 'field_approved');
-    $new_value = (int) field_get_value($node, 'field_approved');
-    if ($original_value != $new_value) {
+    $original_approved_value = (int) field_get_value($original_node, 'field_approved');
+    $new_approved_value = (int) field_get_value($node, 'field_approved');
+    // If field_approved has changed...
+    if ($original_approved_value != $new_approved_value) {
       $user = user_load($node->uid);
       $number_of_approved = field_get_value($user, 'field_number_of_approved_reviews');
       // If approval was changed from "no" or "empty" to "yes", increment.
-      if (empty($original_value)) {
+      if (empty($original_approved_value)) {
         $number_of_approved++;
       }
       else {
-        // The approval was "yes" and now is "no".
+        // The approval was "yes" and now is "no", decrease.
         $number_of_approved--;
       }
       $user->field_number_of_approved_reviews[LANGUAGE_NONE][0]['value'] = $number_of_approved;
@@ -279,7 +280,6 @@ function bdlive_demo_preprocess_node(&$variables) {
   // Notice that the definition needs to include underscores.
   // This will allow us to create node--teaser.tpl.php or any other view mode.
   $variables['theme_hook_suggestions'][] = 'node__' . $variables['elements']['#view_mode'];
-
 }
 
 /**
@@ -289,21 +289,20 @@ function bdlive_demo_preprocess_node(&$variables) {
  * Backdrop. 
  * 
  * The example below allows us to create a new path to show nodes using a specific
- * view mode. This is currently only possible with Views (rendered entity) or 
- * Layout
+ * view mode. This is currently not possible with core AFAIK.
  * 
  * Important: hook_menu() and hook_menu_alter() are only run when you clear caches.
  * This means that you can't dynamically modify menu items on regular page requests
- * simply by using hook_menu_alter(). There are other methods to do this.
+ * simply by using hook_menu_alter(). There are other methods to do that.
  */
 function bdlive_demo_menu() {
   // The fragments that start with % invoke functions that end in _load(), meaning
   // that the returned value is available to pass as arguments to the page
   // callback. For example, %node auto-loads a node with the specified nid using
-  // node_load(). Fragments with % alone are passed literally as a string.
+  // node_load(). Fragments with % alone are passed literally as strings.
   $items['node/%node/view-mode/%'] = array(
     'title callback' => 'node_page_title', // This assures the node title is used as page title.
-    'title arguments' => array(1), // Send the value returned by placeholder in position 1 (the loaded node object).
+    'title arguments' => array(1), // Send the value returned by placeholder in position 1 (the loaded node object) to the title callback.
     'page callback' => 'bdlive_demo_view_node_view_mode',
     'page arguments' => array(1, 3), // Send the node and the view mode string.
     'access callback' => 'node_access',
@@ -333,8 +332,6 @@ function bdlive_demo_block_view_alter(&$data, $block) {
   if ($block->delta == 'powered-by') {
     unset($data['content']['#contextual_links']);
     $data['content']['#markup'] .= '. The BEST CMS in the world!';
-    backdrop_add_library('system', 'backdrop.ajax');
-
   }
 }
 
@@ -446,4 +443,17 @@ function bdlive_demo_field_widget_form_alter(&$element, &$form_state, $context) 
   //     $element['#access'] = FALSE;
   //   }
   // }
+}
+
+/**
+ * Implements hook_entity_info_alter().
+ * 
+ * Programmatically add a view mode "dialog" that we need for the example with
+ * hook_views_pre_render()
+ */
+function bdlive_demo_entity_info_alter(&$info) {
+  $info['node']['view modes']['dialog'] = array(
+    'label' => t('Dialog'),
+    'custom settings' => FALSE,
+  );
 }

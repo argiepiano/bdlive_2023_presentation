@@ -1,0 +1,18 @@
+{
+    "_config_name": "field.bundle.node.restaurant_reviews",
+    "bundle": "restaurant_reviews",
+    "entity_type": "node",
+    "view_modes": {
+        "dialog": {
+            "custom_settings": true
+        }
+    },
+    "extra_fields": {
+        "form": {
+            "title": {
+                "weight": "0"
+            }
+        },
+        "display": []
+    }
+}

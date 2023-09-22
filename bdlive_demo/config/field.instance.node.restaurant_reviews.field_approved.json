@@ -1,0 +1,45 @@
+{
+    "_config_name": "field.instance.node.restaurant_reviews.field_approved",
+    "field_name": "field_approved",
+    "entity_type": "node",
+    "bundle": "restaurant_reviews",
+    "label": "Approved",
+    "widget": {
+        "weight": "7",
+        "type": "options_onoff",
+        "module": "options",
+        "active": 1,
+        "settings": {
+            "display_label": 1
+        }
+    },
+    "description": "",
+    "required": 0,
+    "deleted": 0,
+    "default_value": [
+        {
+            "value": 0
+        }
+    ],
+    "default_value_function": null,
+    "settings": {
+        "restaurant_settings": {
+            "hide_in_form": 1
+        },
+        "user_register_form": false
+    },
+    "display": {
+        "default": {
+            "label": "hidden",
+            "type": "hidden",
+            "weight": "6",
+            "settings": []
+        },
+        "dialog": {
+            "label": "hidden",
+            "type": "hidden",
+            "weight": "6",
+            "settings": []
+        }
+    }
+}

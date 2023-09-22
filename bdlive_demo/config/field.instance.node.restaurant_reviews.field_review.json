@@ -1,0 +1,42 @@
+{
+    "_config_name": "field.instance.node.restaurant_reviews.field_review",
+    "field_name": "field_review",
+    "entity_type": "node",
+    "bundle": "restaurant_reviews",
+    "label": "Review",
+    "widget": {
+        "weight": "5",
+        "type": "text_textarea",
+        "module": "text",
+        "active": 1,
+        "settings": {
+            "rows": "20"
+        }
+    },
+    "description": "",
+    "required": 0,
+    "deleted": 0,
+    "default_value": null,
+    "default_value_function": null,
+    "settings": {
+        "text_processing": "1",
+        "allowed_formats": [],
+        "user_register_form": false
+    },
+    "display": {
+        "default": {
+            "label": "above",
+            "type": "text_default",
+            "weight": "3",
+            "settings": [],
+            "module": "text"
+        },
+        "dialog": {
+            "label": "above",
+            "type": "text_default",
+            "weight": "3",
+            "settings": [],
+            "module": "text"
+        }
+    }
+}

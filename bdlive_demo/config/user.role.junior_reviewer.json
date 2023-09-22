@@ -1,0 +1,15 @@
+{
+    "_config_name": "user.role.junior_reviewer",
+    "name": "junior_reviewer",
+    "label": "Junior reviewer",
+    "description": "",
+    "weight": 5,
+    "permissions": [
+        "access administration bar",
+        "create restaurant_reviews content",
+        "edit own restaurant_reviews content",
+        "edit any restaurant_reviews content",
+        "delete own restaurant_reviews content",
+        "access administration pages"
+    ]
+}

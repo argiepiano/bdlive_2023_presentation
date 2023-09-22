@@ -1,0 +1,33 @@
+{
+    "_config_name": "field.instance.user.user.field_email",
+    "field_name": "field_email",
+    "entity_type": "user",
+    "bundle": "user",
+    "label": "Email",
+    "widget": {
+        "weight": "9",
+        "type": "email_textfield",
+        "module": "email",
+        "active": 1,
+        "settings": {
+            "size": "60"
+        }
+    },
+    "description": "Public email",
+    "required": 1,
+    "deleted": 0,
+    "default_value": null,
+    "default_value_function": null,
+    "settings": {
+        "user_register_form": 1
+    },
+    "display": {
+        "default": {
+            "label": "hidden",
+            "type": "email_default",
+            "settings": [],
+            "module": "email",
+            "weight": 2
+        }
+    }
+}
