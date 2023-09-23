@@ -28,7 +28,7 @@
  * implementation.
  * 
  */
-function bdlive_demo_form_restaurant_reviews_node_form_alter(&$form, &$form_state, &$form_id) {
+function bdlive_demo_form_restaurant_reviews_node_form_alter(&$form, &$form_state, $form_id) {
   // Notice that the first paramenter, &$form, starts with "&". This is really
   // important, as it allows us to modify the original form array. 
   
@@ -370,7 +370,7 @@ function bdlive_demo_action_info() {
 }
 
 /**
- * Callback for action to approve review.
+ * Callback for action to approve/unapprove review.
  * 
  * These action callbacks are called repeatedly, once for each of the views rows selected.
  * They receive specific parameters. The first parameter is the
